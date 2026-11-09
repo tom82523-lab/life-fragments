@@ -4,7 +4,7 @@ Mobile-first anonymous story reading and submissions. Vinext + D1. All sample st
 
 Public users receive a 30-day HttpOnly random session cookie; only its SHA-256 hash is stored. Losing this cookie loses self-service access. User records are excluded after 30 days, and expired rows are purged when a new session is created. No background cleanup guarantee. Limits are per session, not a bot-defense guarantee.
 
-Admin access is checked on the server using the platform-verified owner email. Owner signs in via Sites ChatGPT sign-in. If ownership changes, update the server-only ADMIN constant. Anonymous sessions can submit at most 5 stories and 30 feedback events per day. Private stories cannot be approved. No admin text editing: changed author consent would otherwise be needed.
+Admin access is checked on the server using the platform-verified owner email. Owner signs in via Sites ChatGPT sign-in. If ownership changes, update the server-only ADMIN constant. Anonymous sessions can submit at most 5 stories and 100 feedback events per day. Private stories cannot be approved. No admin text editing: changed author consent would otherwise be needed.
 
 Browser QA and API checks are local. tests/api.mjs uses synthetic trusted admin headers ONLY against local preview; never enable any header-spoofing convenience route in production. Test stories are removed after tests.
 
@@ -23,3 +23,14 @@ Browser QA: all four scenario buttons opened their first letter and next switche
 ## Restored submission entry and random reading
 
 Main navigation, hero, and reader now lead to the original working writing form. Both past and present submission modes and My fragments remain available. Matching registration is a secondary expandable entry and does not implicitly enroll site submissions. Reader opens a random sample immediately; next chooses another without immediate repeats. Scenario controls are optional and collapsed by default. No timed automatic changes. Browser verified random transitions, optional filter, and opening the present form; API regression covers both submission modes, permissions and cleanup.
+
+
+## MVP feedback loop (2026-11-09)
+
+The current reader now saves explicit reactions and, only after a voluntary checkbox, read_view/read_next events to the existing feedback table. No new database, schema migration, third-party analytics, login or payment flow. Consent lasts for this page session and can be turned off; read_view means rendered, not finished reading. Counters are events, not people or retention. The earlier no-API/local-only reader notes describe v4 and are superseded here. Ordinary reading still creates no session and saves no reading events before opt-in.
+
+components/experience-feedback.tsx supplies shared consent, durable submission and a collapsed short website feedback form (category required; visit purpose, life situation and a 300-character message optional). The navigation's 使用回饋 opens it directly, on all public views including writing success. Structured site feedback is private to the owner; it is not a letter or an echo. Error messages preserve form content. Session creation is shared between concurrent read/reaction sends. Removing all browser data resets feedback consent.
+
+The authenticated 管理信箱 shows 30-day aggregate event totals separately for sample/real letters, writing attempts/completions and recent text/reaction feedback (last 300 events, not all records). Public requests cannot retrieve feedback. Aggregates honor the same 30-day cutoff and full erasure. Unknown letters, malformed surveys and missing new-flow consent are rejected. Samples cannot establish effectiveness of real matching or willingness to pay. Existing matching/echo external forms remain unconfigured (#).
+
+Validation: TypeScript and production build; expanded local API test for explicit consent, sample reactions, valid/invalid site feedback, private aggregates and erasure, plus original submission/moderation regression. Browser QA covers consent gating, durable reaction/survey success, random next, and responsive layout.

@@ -35,6 +35,20 @@ for(const type of ['past','present']){
  const own=(await get('mine',a.cookie)).data.stories.find(x=>x.id===result.data.id);assert.equal(own.letterType,type);assert.equal(own.mood,payload.mood);assert.equal(own.reflection,payload.reflection);assert.ok(own.created);assert.ok(own.title);
  const metric=(await get('admin','',true)).data.metrics.find(x=>x.letterType===type);const old=before.find(x=>x.letterType===type);assert.equal(metric.starts,(old?.starts||0)+1);assert.equal(metric.completions,(old?.completions||0)+1);
 }
+// Opt-in reader feedback and site research must persist privately and erase fully.
+const sample='career-1';
+assert.equal((await req('feedback',{story:sample,kind:'resonate',note:''},b.cookie)).status,400);
+for(const kind of ['read_view','read_next','resonate','neutral']) assert.equal((await req('feedback',{story:sample,kind,note:'',consent:true},b.cookie)).status,200);
+const survey=JSON.stringify({page:'read',category:'操作或畫面有問題',purpose:'只是好奇看看',situation:'',message:'測試回饋，結束即刪除'});
+assert.equal((await req('feedback',{story:'site',kind:'site_feedback',note:survey,consent:true},b.cookie)).status,200);
+assert.equal((await req('feedback',{story:'site',kind:'site_feedback',note:'{}',consent:true},b.cookie)).status,400);
+assert.equal((await req('feedback',{story:'site',kind:'read_next',note:'',consent:true},b.cookie)).status,400);
+assert.equal((await req('feedback',{story:'unknown-letter',kind:'resonate',note:'',consent:true},b.cookie)).status,404);
+const adminData=(await get('admin','',true)).data;
+assert.ok(adminData.feedback.some(f=>f.story==='site'&&f.note===survey));
+assert.ok(adminData.reading.some(f=>f.story===sample&&f.kind==='read_next'&&f.events>=1));
+assert.equal((await get()).data.feedback,undefined);
 assert.equal((await req('erase',{},a.cookie)).status,200);assert.equal((await req('erase',{},b.cookie)).status,200);
 assert.ok(!(await get('admin','',true)).data.stories.some(x=>x.title===story.title));
-console.log('PASS: cross-origin rejection, auth, validation, isolation, moderation, private consent, durable reads, feedback, withdrawal, cleanup');
+assert.ok(!(await get('admin','',true)).data.feedback.some(f=>f.note===survey));
+console.log('PASS: opt-in, sample feedback, site survey, private metrics, erase, cross-origin rejection, auth, validation, isolation, moderation, private consent, durable reads, feedback, withdrawal, cleanup');
